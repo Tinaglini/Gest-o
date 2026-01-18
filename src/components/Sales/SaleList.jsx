@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSales, deleteSale, getProducts, getClients } from '../../utils/storage';
-import { formatCurrency, formatDate, PAYMENT_METHODS } from '../../utils/calculations';
+import { formatCurrency, formatDate, PAYMENT_METHODS, DELIVERY_TYPES } from '../../utils/calculations';
 import SaleForm from './SaleForm';
 import InstallmentManager from './InstallmentManager';
 
