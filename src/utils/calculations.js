@@ -192,3 +192,135 @@ export const calculateDashboardStats = (sales, products) => {
     paymentMethodsCount
   };
 };
+
+// Tipos de entrega
+export const DELIVERY_TYPES = {
+  PICKUP: 'Retirada no Local',
+  PAC: 'Correios PAC',
+  SEDEX: 'Correios SEDEX',
+  MOTOBOY: 'Motoboy',
+  OTHER: 'Outros'
+};
+
+// Calcular lucro sem frete (lucro base do produto)
+export const calculateProfitWithoutShipping = (
+  originalPrice,
+  purchasePrice,
+  quantity,
+  discount,
+  paymentMethod
+) => {
+  // Subtotal do produto
+  const subtotal = (originalPrice * quantity) - discount;
+
+  // Taxa sem frete
+  const fee = calculateFee(paymentMethod, subtotal);
+
+  // Custo total
+  const totalCost = purchasePrice * quantity;
+
+  // Lucro sem frete
+  const profit = subtotal - totalCost - fee;
+
+  return {
+    subtotal,
+    fee,
+    totalCost,
+    profit
+  };
+};
+
+// Calcular preço ajustado do produto para manter o lucro com frete
+export const calculateAdjustedPrice = (
+  profitWithoutShipping,
+  purchasePrice,
+  quantity,
+  shippingCost,
+  paymentMethod
+) => {
+  // Se não há frete, retornar 0 (sem necessidade de ajuste)
+  if (shippingCost <= 0) {
+    return 0;
+  }
+
+  const method = PAYMENT_METHODS[paymentMethod];
+  if (!method) return 0;
+
+  // Para taxas percentuais
+  if (method.type === 'percentage') {
+    const taxRate = method.rate;
+
+    // Fórmula: (lucroSemFrete + custoTotal + frete + (frete × taxa)) / (quantidade × (1 - taxa))
+    const numerator = profitWithoutShipping + (purchasePrice * quantity) + shippingCost + (shippingCost * taxRate);
+    const denominator = quantity * (1 - taxRate);
+
+    return Math.round((numerator / denominator) * 100) / 100;
+  }
+
+  // Para taxa fixa (boleto)
+  if (method.type === 'fixed') {
+    // Com taxa fixa, o ajuste é mais simples
+    const fixedFee = method.rate;
+    const adjustedPrice = ((profitWithoutShipping + (purchasePrice * quantity) + shippingCost) / quantity);
+    return Math.round(adjustedPrice * 100) / 100;
+  }
+
+  // Para sem taxa (dinheiro, pix parcelado)
+  if (method.type === 'none') {
+    return 0; // Não precisa ajustar
+  }
+
+  return 0;
+};
+
+// Calcular totais finais com frete
+export const calculateTotalsWithShipping = (
+  finalProductPrice,
+  purchasePrice,
+  quantity,
+  discount,
+  shippingCost,
+  paymentMethod
+) => {
+  // Subtotal do produto
+  const productSubtotal = (finalProductPrice * quantity) - discount;
+
+  // Total pago pelo cliente (produto + frete)
+  const totalCharged = productSubtotal + shippingCost;
+
+  // Taxa sobre o total (produto + frete)
+  const fee = calculateFee(paymentMethod, totalCharged);
+
+  // Custo total (produto + frete)
+  const totalCost = (purchasePrice * quantity) + shippingCost;
+
+  // Lucro líquido (não inclui frete no lucro, apenas no cálculo da taxa)
+  const netProfit = productSubtotal - (purchasePrice * quantity) - fee;
+
+  return {
+    productSubtotal,
+    totalCharged,
+    fee,
+    totalCost,
+    netProfit
+  };
+};
+
+// Comparar lucro com e sem ajuste de frete
+export const compareShippingProfit = (
+  profitWithoutShipping,
+  profitWithShipping
+) => {
+  const difference = profitWithShipping - profitWithoutShipping;
+  const percentageChange = profitWithoutShipping > 0
+    ? (difference / profitWithoutShipping) * 100
+    : 0;
+
+  return {
+    difference,
+    percentageChange,
+    isLower: difference < 0,
+    isHigher: difference > 0,
+    isSame: Math.abs(difference) < 0.01 // Considera iguais se diferença < 1 centavo
+  };
+};
