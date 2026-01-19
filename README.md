@@ -64,6 +64,16 @@ Sistema completo para gerenciar vendas de perfumes com controle financeiro detal
 - Distribuição por forma de pagamento
 - Filtros avançados por período, cliente, produto, status
 
+### Cálculo de Imposto de Renda 💰
+- **Carnê-Leão com dedução simplificada (20%)**
+- Cálculo automático baseado nas vendas dos últimos 30 dias
+- Cálculo manual por faturamento informado
+- Tabela progressiva IR 2025 completa
+- Projeção anual de IR
+- Análise com custos reais (opcional)
+- Alíquota efetiva calculada
+- Exemplos de validação para teste
+
 ## Tecnologias Utilizadas
 
 - **React** - Framework frontend
@@ -163,13 +173,77 @@ Quando você adiciona frete a uma venda, o Mercado Pago cobra taxa sobre o **val
 - Taxa MP: R$ 12,11
 - **Lucro: R$ 101,06** ✅ (mantém o lucro!)
 
-### Funcionalidades
+### Funcionalidades de Frete
 
 1. **Cálculo Automático**: Digite o valor do frete e o sistema calcula o preço ajustado
 2. **Tipos de Entrega**: Retirada no Local, Correios PAC, SEDEX, Motoboy, Outros
 3. **Comparação Visual**: Veja lado a lado o lucro com e sem frete
 4. **Alertas Inteligentes**: Aviso quando o preço está abaixo do recomendado
 5. **Campo Editável**: Você pode ajustar manualmente se preferir
+
+## Cálculo de Imposto de Renda (Carnê-Leão)
+
+### Como Funciona
+
+Sistema completo para calcular o IR mensal de pessoa física autônoma usando a **dedução simplificada de 20%**.
+
+**ETAPA 1: Base de Cálculo**
+```
+Base de Cálculo = Faturamento Mensal × 0,80
+```
+(Deduz automaticamente 20% do faturamento)
+
+**ETAPA 2: Aplicar Tabela Progressiva 2025**
+
+| Base de Cálculo | Alíquota | Dedução |
+|-----------------|----------|---------|
+| Até R$ 2.259,20 | Isento | - |
+| R$ 2.259,21 a R$ 2.826,65 | 7,5% | R$ 169,44 |
+| R$ 2.826,66 a R$ 4.664,68 | 15% | R$ 381,44 |
+| R$ 4.664,69 a R$ 5.839,45 | 22,5% | R$ 662,77 |
+| Acima de R$ 5.839,45 | 27,5% | R$ 896,00 |
+
+**Fórmula:**
+```
+IR Devido = (Base de Cálculo × Alíquota) - Dedução
+```
+
+### Exemplos Práticos
+
+**Exemplo 1: Faturamento R$ 3.000,00**
+- Base: R$ 2.400,00 (80%)
+- Faixa: 7,5%
+- IR: (2.400 × 7,5%) - 169,44 = **R$ 10,56**
+- Alíquota efetiva: **0,35%**
+
+**Exemplo 2: Faturamento R$ 5.000,00**
+- Base: R$ 4.000,00 (80%)
+- Faixa: 15%
+- IR: (4.000 × 15%) - 381,44 = **R$ 218,56**
+- Alíquota efetiva: **4,37%**
+
+**Exemplo 3: Faturamento R$ 11.400,00**
+- Base: R$ 9.120,00 (80%)
+- Faixa: 27,5%
+- IR: (9.120 × 27,5%) - 896,00 = **R$ 1.612,00**
+- Alíquota efetiva: **14,14%**
+
+### Funcionalidades do Cálculo de IR
+
+1. **Cálculo Automático**: Sistema calcula baseado nas vendas dos últimos 30 dias
+2. **Cálculo Manual**: Digite o faturamento manualmente
+3. **Custos Reais**: Opção de incluir custos para ver lucro após IR
+4. **Projeção Anual**: Veja quanto pagará de IR no ano
+5. **Alíquota Efetiva**: Percentual real sobre o faturamento
+6. **Informações de Pagamento**: Prazo, DARF, etc.
+
+### Informações Importantes
+
+- Pagamento até o **último dia útil do mês seguinte**
+- Use **DARF código 0190**
+- Dedução simplificada é automática (20%)
+- Valores já consideram a tabela 2025
+- Consulte um contador para situações específicas
 
 ## Funcionalidades Extras
 
