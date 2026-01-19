@@ -44,12 +44,17 @@ const Financial = () => {
     setMonthlyRevenue(revenue.toFixed(2));
     setRealCosts(costs.toFixed(2));
     setUseRealCosts(true);
-    handleCalculate(revenue, costs);
+
+    // Calcular com custos reais automaticamente
+    const results = calculateIRWithRealCosts(revenue, costs);
+    const annualProjection = calculateAnnualIRProjection(revenue);
+    results.annualProjection = annualProjection;
+    setIrResults(results);
   };
 
-  const handleCalculate = (revenue = null, costs = null) => {
-    const revenueValue = revenue !== null ? revenue : parseFloat(monthlyRevenue) || 0;
-    const costsValue = costs !== null ? costs : parseFloat(realCosts) || 0;
+  const handleCalculate = () => {
+    const revenueValue = parseFloat(monthlyRevenue) || 0;
+    const costsValue = parseFloat(realCosts) || 0;
 
     if (revenueValue <= 0) {
       setIrResults(null);
@@ -103,89 +108,103 @@ const Financial = () => {
       </div>
 
       {/* Opção de calcular automaticamente */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-center space-x-3">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-5">
+        <div className="flex items-start space-x-3">
           <input
             type="checkbox"
             id="autoCalc"
             checked={autoCalculateFromSales}
-            onChange={(e) => setAutoCalculateFromSales(e.target.checked)}
-            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+            onChange={(e) => {
+              setAutoCalculateFromSales(e.target.checked);
+              if (!e.target.checked) {
+                setMonthlyRevenue('');
+                setRealCosts('');
+                setUseRealCosts(false);
+                setIrResults(null);
+              }
+            }}
+            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 mt-1"
           />
-          <label htmlFor="autoCalc" className="text-sm font-medium text-blue-900 cursor-pointer">
-            Calcular automaticamente com base nas vendas dos últimos 30 dias
-          </label>
+          <div className="flex-1">
+            <label htmlFor="autoCalc" className="text-base font-bold text-blue-900 cursor-pointer block">
+              ⚡ Calcular Automaticamente das Vendas (Últimos 30 dias)
+            </label>
+            <p className="text-sm text-blue-700 mt-1">
+              Calcula faturamento, custos e mostra seu lucro COM e SEM IR descontado
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Formulário de Entrada */}
-      <div className="bg-white rounded-lg shadow-lg p-6 space-y-6">
-        <h2 className="text-xl font-bold text-gray-800">Dados para Cálculo</h2>
+      {/* Formulário de Entrada Manual */}
+      {!autoCalculateFromSales && (
+        <div className="bg-white rounded-lg shadow-lg p-6 space-y-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Cálculo Manual</h2>
+            <p className="text-sm text-gray-600 mt-1">Digite apenas o faturamento para calcular o IR</p>
+          </div>
 
-        {/* Faturamento Mensal */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Faturamento Mensal (R$) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            value={monthlyRevenue}
-            onChange={(e) => setMonthlyRevenue(e.target.value)}
-            step="0.01"
-            min="0"
-            placeholder="Ex: 5000.00"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
-            disabled={autoCalculateFromSales}
-          />
-        </div>
-
-        {/* Opção de usar custos reais */}
-        <div className="flex items-center space-x-3">
-          <input
-            type="checkbox"
-            id="useRealCosts"
-            checked={useRealCosts}
-            onChange={(e) => setUseRealCosts(e.target.checked)}
-            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-            disabled={autoCalculateFromSales}
-          />
-          <label htmlFor="useRealCosts" className="text-sm font-medium text-gray-700 cursor-pointer">
-            Usar custos reais para métricas adicionais
-          </label>
-        </div>
-
-        {/* Custos Reais (opcional) */}
-        {useRealCosts && (
+          {/* Faturamento Mensal */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Custos Reais Mensais (R$)
+              Faturamento Mensal (R$) <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
-              value={realCosts}
-              onChange={(e) => setRealCosts(e.target.value)}
+              value={monthlyRevenue}
+              onChange={(e) => setMonthlyRevenue(e.target.value)}
               step="0.01"
               min="0"
-              placeholder="Ex: 2000.00"
+              placeholder="Ex: 5000.00"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
-              disabled={autoCalculateFromSales}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Inclui custos de produtos, frete, e outras despesas operacionais
-            </p>
           </div>
-        )}
 
-        {/* Botão Calcular */}
-        {!autoCalculateFromSales && (
+          {/* Opção de adicionar custos */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center space-x-3 mb-3">
+              <input
+                type="checkbox"
+                id="useRealCosts"
+                checked={useRealCosts}
+                onChange={(e) => setUseRealCosts(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="useRealCosts" className="text-sm font-semibold text-gray-800 cursor-pointer">
+                Adicionar custos para ver comparação de lucro
+              </label>
+            </div>
+
+            {useRealCosts && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Custos Reais Mensais (R$)
+                </label>
+                <input
+                  type="number"
+                  value={realCosts}
+                  onChange={(e) => setRealCosts(e.target.value)}
+                  step="0.01"
+                  min="0"
+                  placeholder="Ex: 2000.00"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Custos de produtos, frete e outras despesas
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Botão Calcular */}
           <button
             onClick={() => handleCalculate()}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-lg"
           >
             Calcular IR
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Resultados */}
       {irResults && (
