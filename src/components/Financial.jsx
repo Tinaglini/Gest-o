@@ -29,14 +29,16 @@ const Financial = () => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const recentSales = sales.filter(sale => new Date(sale.date) >= thirtyDaysAgo);
 
-    // Calcular faturamento mensal
+    // Calcular faturamento mensal (total pago pelos clientes)
     const revenue = recentSales.reduce((sum, sale) => sum + sale.totalValue, 0);
 
-    // Calcular custos reais (custo dos produtos vendidos + frete)
+    // Calcular custos reais (soma dos custos dos produtos + taxas + frete)
     const costs = recentSales.reduce((sum, sale) => {
-      const productCost = (sale.unitPrice - (sale.finalProductPrice || sale.unitPrice)) || 0;
-      const shipping = sale.shippingCost || 0;
-      return sum + (productCost * sale.quantity) + shipping;
+      // Custo do produto (baseado no netProfit e valores da venda)
+      // netProfit = totalValue - custoProduto - taxa
+      // Então: custoProduto = totalValue - netProfit - taxa
+      const productCost = sale.totalValue - sale.netProfit - (sale.fee || 0);
+      return sum + productCost;
     }, 0);
 
     setMonthlyRevenue(revenue.toFixed(2));
@@ -212,6 +214,85 @@ const Financial = () => {
             </div>
           </div>
 
+          {/* Comparação de Lucro - COM e SEM IR */}
+          {irResults.realCosts !== undefined && (
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-300 rounded-lg p-6">
+              <h3 className="text-xl font-bold text-purple-900 mb-4 text-center">
+                💰 Comparação: Lucro COM e SEM IR Descontado
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Lucro SEM IR */}
+                <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-green-400">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700">Lucro SEM IR Descontado</span>
+                    <span className="text-2xl">✅</span>
+                  </div>
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    {formatCurrency(irResults.realProfit)}
+                  </div>
+                  <div className="text-xs text-gray-600 space-y-1 mt-3 pt-3 border-t border-gray-200">
+                    <p>Faturamento: {formatCurrency(irResults.monthlyRevenue)}</p>
+                    <p>Custos: {formatCurrency(irResults.realCosts)}</p>
+                    <p className="font-semibold text-green-700">= Lucro Bruto</p>
+                  </div>
+                </div>
+
+                {/* Lucro COM IR */}
+                <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-blue-400">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700">Lucro COM IR Descontado</span>
+                    <span className="text-2xl">💵</span>
+                  </div>
+                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                    {formatCurrency(irResults.profitAfterIR)}
+                  </div>
+                  <div className="text-xs text-gray-600 space-y-1 mt-3 pt-3 border-t border-gray-200">
+                    <p>Lucro Bruto: {formatCurrency(irResults.realProfit)}</p>
+                    <p className="text-red-600">IR Mensal: {formatCurrency(irResults.irDue)}</p>
+                    <p className="font-semibold text-blue-700">= Lucro Líquido</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Impacto do IR */}
+              <div className="mt-4 bg-yellow-100 border border-yellow-300 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-yellow-900">Impacto do IR no Lucro</p>
+                    <p className="text-xs text-yellow-800 mt-1">
+                      O IR representa {irResults.irPercentageOnProfit.toFixed(2)}% do seu lucro real mensal
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-red-600">
+                      -{formatCurrency(irResults.irDue)}
+                    </p>
+                    <p className="text-xs text-gray-600">por mês</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Projeção Anual do Impacto */}
+              <div className="mt-3 bg-gray-100 border border-gray-300 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Impacto Anual do IR</p>
+                    <p className="text-xs text-gray-700 mt-1">
+                      Projeção do IR que você pagará no ano todo
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-red-700">
+                      -{formatCurrency(irResults.annualProjection.annualIRDue)}
+                    </p>
+                    <p className="text-xs text-gray-600">no ano</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Informações da Faixa */}
           {bracketInfo && (
             <div className={`rounded-lg p-4 ${
@@ -256,35 +337,6 @@ const Financial = () => {
               </div>
             </div>
           </div>
-
-          {/* Métricas com Custos Reais */}
-          {irResults.realCosts !== undefined && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <h3 className="text-lg font-bold text-green-800 mb-4">Análise com Custos Reais</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-gray-700 mb-3">
-                    <strong>Custos Reais:</strong> {formatCurrency(irResults.realCosts)}
-                  </div>
-                  <div className="text-sm text-gray-700 mb-3">
-                    <strong>Lucro Real:</strong> {formatCurrency(irResults.realProfit)}
-                  </div>
-                  <div className="text-sm text-gray-700 mb-3">
-                    <strong>Lucro após IR:</strong> {formatCurrency(irResults.profitAfterIR)}
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-green-300">
-                  <div className="text-sm text-gray-600">IR sobre o Lucro Real</div>
-                  <div className="text-3xl font-bold text-green-700 mt-1">
-                    {irResults.irPercentageOnProfit.toFixed(2)}%
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Representa quanto do seu lucro vai para o IR
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Tabela de Faixas */}
           <div className="bg-white rounded-lg shadow-lg p-6">
