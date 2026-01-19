@@ -324,3 +324,94 @@ export const compareShippingProfit = (
     isSame: Math.abs(difference) < 0.01 // Considera iguais se diferença < 1 centavo
   };
 };
+
+// ========================================
+// CÁLCULO DE IMPOSTO DE RENDA (CARNÊ-LEÃO)
+// ========================================
+
+// Tabela progressiva do IR 2025 (carnê-leão - pessoa física autônoma)
+// Nota: Estes são os limites APÓS a dedução simplificada de 20%
+export const IR_TAX_BRACKETS_2025 = [
+  { max: 2259.20, rate: 0, deduction: 0 },
+  { max: 2826.65, rate: 0.075, deduction: 169.44 },
+  { max: 4664.68, rate: 0.15, deduction: 381.44 },
+  { max: 5839.45, rate: 0.225, deduction: 662.77 },
+  { max: Infinity, rate: 0.275, deduction: 896.00 }
+];
+
+/**
+ * Calcula o Imposto de Renda mensal usando dedução simplificada de 20%
+ * @param {number} monthlyRevenue - Faturamento mensal em R$
+ * @returns {object} Objeto com base de cálculo, IR devido e alíquota efetiva
+ */
+export const calculateMonthlyIR = (monthlyRevenue) => {
+  // ETAPA 1: Calcular base de cálculo (dedução simplificada de 20%)
+  const calculationBase = monthlyRevenue * 0.80;
+
+  // ETAPA 2: Aplicar tabela progressiva
+  let irDue = 0;
+  let appliedRate = 0;
+
+  for (const bracket of IR_TAX_BRACKETS_2025) {
+    if (calculationBase <= bracket.max) {
+      irDue = (calculationBase * bracket.rate) - bracket.deduction;
+      appliedRate = bracket.rate;
+      break;
+    }
+  }
+
+  // Garantir que IR não seja negativo
+  irDue = Math.max(0, irDue);
+
+  // Calcular alíquota efetiva
+  const effectiveRate = monthlyRevenue > 0 ? (irDue / monthlyRevenue) * 100 : 0;
+
+  return {
+    monthlyRevenue: Math.round(monthlyRevenue * 100) / 100,
+    calculationBase: Math.round(calculationBase * 100) / 100,
+    irDue: Math.round(irDue * 100) / 100,
+    appliedRate: appliedRate * 100, // Converter para porcentagem
+    effectiveRate: Math.round(effectiveRate * 100) / 100,
+    simplifiedDeduction: Math.round((monthlyRevenue * 0.20) * 100) / 100
+  };
+};
+
+/**
+ * Calcula IR com custos reais (opcional)
+ * @param {number} monthlyRevenue - Faturamento mensal
+ * @param {number} realCosts - Custos reais do negócio
+ * @returns {object} Objeto com métricas adicionais
+ */
+export const calculateIRWithRealCosts = (monthlyRevenue, realCosts) => {
+  const irCalculation = calculateMonthlyIR(monthlyRevenue);
+
+  const realProfit = monthlyRevenue - realCosts;
+  const profitAfterIR = realProfit - irCalculation.irDue;
+  const irPercentageOnProfit = realProfit > 0
+    ? (irCalculation.irDue / realProfit) * 100
+    : 0;
+
+  return {
+    ...irCalculation,
+    realCosts: Math.round(realCosts * 100) / 100,
+    realProfit: Math.round(realProfit * 100) / 100,
+    profitAfterIR: Math.round(profitAfterIR * 100) / 100,
+    irPercentageOnProfit: Math.round(irPercentageOnProfit * 100) / 100
+  };
+};
+
+/**
+ * Calcula IR anual projetado
+ * @param {number} monthlyRevenue - Faturamento mensal médio
+ * @returns {object} Projeção anual
+ */
+export const calculateAnnualIRProjection = (monthlyRevenue) => {
+  const monthlyCalc = calculateMonthlyIR(monthlyRevenue);
+
+  return {
+    annualRevenue: monthlyRevenue * 12,
+    annualIRDue: monthlyCalc.irDue * 12,
+    averageMonthlyIR: monthlyCalc.irDue,
+    effectiveRate: monthlyCalc.effectiveRate
+  };
+};

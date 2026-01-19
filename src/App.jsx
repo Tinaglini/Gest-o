@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import ProductList from './components/Products/ProductList';
 import ClientList from './components/Clients/ClientList';
 import SaleList from './components/Sales/SaleList';
+import Financial from './components/Financial';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -11,7 +12,8 @@ function App() {
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'products', label: 'Produtos', icon: '🧴' },
     { id: 'clients', label: 'Clientes', icon: '👥' },
-    { id: 'sales', label: 'Vendas', icon: '🛍️' }
+    { id: 'sales', label: 'Vendas', icon: '🛍️' },
+    { id: 'financial', label: 'Impostos', icon: '💰' }
   ];
 
   const renderPage = () => {
@@ -24,6 +26,8 @@ function App() {
         return <ClientList />;
       case 'sales':
         return <SaleList />;
+      case 'financial':
+        return <Financial />;
       default:
         return <Dashboard />;
     }
